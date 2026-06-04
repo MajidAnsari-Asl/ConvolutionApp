@@ -1,10 +1,11 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
-#include <string>
+#include <filesystem>
+#include <stdexcept>
+#include "Kernel.hpp"
 
 class KernelLoader
 {
 public:
-    static cv::Mat load(const std::string& filename);
+    static Kernel load(const std::filesystem::path& path);
 };

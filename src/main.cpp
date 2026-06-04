@@ -1,51 +1,97 @@
-#include "ConvolutionProcessor.hpp"
-#include "KernelLoader.hpp"
-
-#include <opencv2/opencv.hpp>
-
 #include <iostream>
 #include <stdexcept>
 
-int main(int argc, char* argv[])
+#include <opencv2/opencv.hpp>
+
+#include "KernelLoader.hpp"
+#include "Convolution.hpp"
+
+#include <chrono>
+
+ConvolutionMethod parseMethod(
+    const std::string& str)
 {
+    if (str == "builtin")
+    {
+        return ConvolutionMethod::Builtin;
+    }
+
+    if (str == "custom")
+    {
+        return ConvolutionMethod::Custom;
+    }
+
+    throw std::runtime_error(
+        "Unknown convolution method: " + str);
+}
+
+int main(
+    int argc,
+    char* argv[])
+{
+    if (argc != 5)
+    {
+        std::cerr
+            << "Usage:\n"
+            << "./ConvolutionApp image kernel output method\n";
+
+        return EXIT_FAILURE;
+    }
+
     try
     {
-        if (argc != 4)
-        {
-            std::cerr
-                << "Usage:\n"
-                << "./ConvolutionApp ../inImages/AGon-Spaces - 4.png ../kernels/gaussian.txt ../outResults/output.png\n";
+        const auto imagePath = argv[1];
+        const auto kernelPath = argv[2];
+        const auto outputPath = argv[3];
+        const auto method = parseMethod(argv[4]);
 
-            return EXIT_FAILURE;
-        }
-
-        const std::string imagePath = argv[1];
-        const std::string kernelPath = argv[2];
-        const std::string outputPath = argv[3];
-
-        cv::Mat image = cv::imread(
-            imagePath,
-            cv::IMREAD_UNCHANGED);
+        cv::Mat image =
+            cv::imread(
+                imagePath,
+                cv::IMREAD_UNCHANGED);
 
         if (image.empty())
         {
             throw std::runtime_error(
-                "Failed to load image.");
+                "Cannot load image");
         }
 
-        cv::Mat kernel =
-            KernelLoader::load(kernelPath);
+        auto kernel =
+            KernelLoader::load(
+                kernelPath);
 
-        cv::Mat result =
-            ConvolutionProcessor::apply(
-                image,
-                kernel);
+        cv::Mat result;
 
-        cv::Mat output;
+        auto start =
+            std::chrono::steady_clock::now();
 
-        result.convertTo(output, image.type());
+        switch(method)
+        {
+        case ConvolutionMethod::Builtin:
+            result =
+                Convolution::filter2DVersion(
+                    image,
+                    kernel);
+            break;
 
-        if (!cv::imwrite(outputPath, output))
+        case ConvolutionMethod::Custom:
+            result =
+                Convolution::customVersion(
+                    image,
+                    kernel);
+            break;
+        }
+        auto end =
+            std::chrono::steady_clock::now();
+
+        std::cout
+            << "Convolution took "
+            << std::chrono::duration_cast
+            <std::chrono::milliseconds>
+            (end - start).count()
+            << " ms\n";
+
+            if (!cv::imwrite(outputPath, result))
         {
             throw std::runtime_error(
                 "Failed to write image.");
@@ -58,12 +104,12 @@ int main(int argc, char* argv[])
 
         return EXIT_SUCCESS;
     }
-    catch (const std::exception& ex)
+    catch (
+        const std::exception& e)
     {
         std::cerr
-            << "Error: "
-            << ex.what()
-            << std::endl;
+            << e.what()
+            << '\n';
 
         return EXIT_FAILURE;
     }

@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [ 
+        {
+            "name": "Launch ConvolutionApp",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/ConvolutionApp",
+            "args": [
+                "${workspaceFolder}/inImages/AGon-Spaces - 4.png",
+                "${workspaceFolder}/kernels/sharpen.txt",
+                "${workspaceFolder}/outResults/output.png"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
+        }
+
+        
+
+
+    ]
+}

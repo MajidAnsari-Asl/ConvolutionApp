@@ -3,29 +3,39 @@
 #include <fstream>
 #include <stdexcept>
 
-cv::Mat KernelLoader::load(const std::string& filename)
+Kernel KernelLoader::load(
+    const std::filesystem::path& path)
 {
-    std::ifstream file(filename);
+    std::ifstream file(path);
 
-    if (!file.is_open())
+    if (!file)
     {
-        throw std::runtime_error("Failed to open kernel file.");
+        throw std::runtime_error(
+            "Cannot open kernel file");
     }
 
-    int rows{};
-    int cols{};
+    size_t rows;
+    size_t cols;
 
     file >> rows >> cols;
 
-    cv::Mat kernel(rows, cols, CV_32F);
+    std::vector<float> values;
+    values.reserve(rows * cols);
 
-    for (int r = 0; r < rows; ++r)
+    float v;
+
+    while (file >> v)
     {
-        for (int c = 0; c < cols; ++c)
-        {
-            file >> kernel.at<float>(r, c);
-        }
+        values.push_back(v);
     }
 
-    return kernel;
+    if (values.size() != rows * cols)
+    {
+        throw std::runtime_error(
+            "Kernel size mismatch");
+    }
+
+    return Kernel(rows,
+                  cols,
+                  std::move(values));
 }

@@ -14,7 +14,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # add the executable target
 add_executable(ConvolutionApp
   src/main.cpp
-  src/ConvolutionProcessor.cpp
+  src/Convolution.cpp
+  src/Kernel.cpp
   src/KernelLoader.cpp
 )
 
