@@ -43,13 +43,14 @@ cv::Mat Convolution::customVersion(
     const cv::Mat& image,
     const Kernel& kernel)
 {
-    cv::Mat result =
-        cv::Mat::zeros(
-            image.size(),
-            CV_32F);
-
     cv::Mat imageFloat;
     image.convertTo(imageFloat, CV_32F);
+
+    std::vector<cv::Mat> channels;
+    cv::split(imageFloat, channels);
+
+    std::vector<cv::Mat> channelsOutput;
+    channelsOutput.reserve(channels.size());
 
     const int kRows =
         static_cast<int>(kernel.rows());
@@ -60,50 +61,61 @@ cv::Mat Convolution::customVersion(
     const int padY = kRows / 2;
     const int padX = kCols / 2;
 
-    for (int y = padY;
-         y < imageFloat.rows - padY;
-         ++y)
+    for (const auto& ch : channels)
     {
-        for (int x = padX;
-             x < imageFloat.cols - padX;
-             ++x)
+        cv::Mat result =
+            cv::Mat::zeros(
+                ch.size(),
+                CV_32F);
+
+        for (int y = padY;
+            y < imageFloat.rows - padY;
+            ++y)
         {
-            float sum = 0.f;
-
-            for (int ky = 0;
-                 ky < kRows;
-                 ++ky)
+            for (int x = padX;
+                x < imageFloat.cols - padX;
+                ++x)
             {
-                for (int kx = 0;
-                     kx < kCols;
-                     ++kx)
+                float sum = 0.f;
+
+                for (int ky = 0;
+                    ky < kRows;
+                    ++ky)
                 {
-                    int iy =
-                        y + ky - padY;
+                    for (int kx = 0;
+                        kx < kCols;
+                        ++kx)
+                    {
+                        int iy =
+                            y + ky - padY;
 
-                    int ix =
-                        x + kx - padX;
+                        int ix =
+                            x + kx - padX;
 
-                    float pixel =
-                        imageFloat.at<float>(
-                            iy,
-                            ix);
+                        float pixel =
+                            ch.at<float>(
+                                iy,
+                                ix);
 
-                    sum += pixel *
-                        kernel.at(
-                            ky,
-                            kx);
+                        sum += pixel *
+                            kernel.at(
+                                ky,
+                                kx);
+                    }
                 }
-            }
 
-            result.at<float>(y,x)
-                = sum;
+                result.at<float>(y,x)
+                    = sum;
+            }
         }
+        channelsOutput.push_back(result);
     }
+    
+    cv::Mat mergedResult;
+    cv::merge(channelsOutput, mergedResult);
 
     cv::Mat output;
-
-    result.convertTo(
+    mergedResult.convertTo(
         output,
         image.type());
 
